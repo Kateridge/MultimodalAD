@@ -5,7 +5,6 @@ from einops.layers.torch import Rearrange
 from torch import nn, einsum
 from torch.nn import AdaptiveAvgPool1d
 
-from models.flamingo import GatedCrossAttentionBlock
 from typing import Sequence
 
 
@@ -226,23 +225,6 @@ class Transformer_T_Assited(nn.Module):
             self.layers.append(nn.ModuleList([
                 AftNorm(dim, Attention(dim, heads=heads, dim_head=dim_head, dropout=dropout)),
                 AftNorm(dim, T_Assisted_FeedForward(dim, tabular_dim, mlp_dim))
-            ]))
-
-    def forward(self, x, tabular, context=None):
-        for attn, ff in self.layers:
-            x = attn(x, context=context) + x
-            x = ff(x, context=tabular) + x
-        return self.norm(x)
-
-
-class Transformer_T_Assisted_Flamingo(nn.Module):
-    def __init__(self, dim, tabular_dim, depth, heads, dim_head, mlp_dim, dropout=0.):
-        super().__init__()
-        self.layers = nn.ModuleList([])
-        for ind in range(depth):
-            self.layers.append(nn.ModuleList([
-                Transformer_T_Assited(dim, tabular_dim, 1, heads, dim_head, mlp_dim, dropout=0.),
-                GatedCrossAttentionBlock(dim=dim, dim_head=dim_head, heads=heads, ff_mult=mlp_dim // dim)
             ]))
 
     def forward(self, x, tabular, context=None):
